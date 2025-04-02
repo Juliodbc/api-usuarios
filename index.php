@@ -1,59 +1,72 @@
 <?php
-
-header("Content-Type: application/json");
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use Slim\Factory\AppFactory;        
+use Slim\Exception\HttpNotFoundException;
  
-$method = $_SERVER['REQUEST_METHOD'];
-$data = json_decode(file_get_contents("php://input"), true);
+require __DIR__ . '/vendor/autoload.php';
  
-$usuarios = [
-    [ "id" => 1, "login" => "user1", "senha" => "1234", "nome" => "Usuário 1", "perfil" => "admin" ],
-    [ "id" => 2, "login" => "user2", "senha" => "1234", "nome" => "Usuário 2", "perfil" => "user" ],
-    [ "id" => 3, "login" => "user3", "senha" => "1234", "nome" => "Usuário 3", "perfil" => "user" ],
-    [ "id" => 4, "login" => "user4", "senha" => "1234", "nome" => "Usuário 4", "perfil" => "user" ],
-    [ "id" => 5, "login" => "user5", "senha" => "1234", "nome" => "Usuário 5", "perfil" => "user" ]
-];
+$app = AppFactory::create();
  
-if ($method == 'POST') {
-    if (!isset($data['login']) || !isset($data['senha'])) {
-        echo json_encode(["erro" => "Login e senha são obrigatórios"]);
-        http_response_code(400);
-        exit;
-    }
-   
-    $novoUsuario = [
-        "id" => count($usuarios) + 1,
-        "login" => $data['login'],
-        "senha" => $data['senha'],
-        "nome" => $data['nome'] ?? '',
-        "perfil" => $data['perfil'] ?? ''
+$app->get('/hello/{name}', function (Request $request, Response $response, array $args) {
+    $name = $args['name'];
+    $response->getBody()->write("Hello, $name");
+    return $response;
+});
+ 
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorMiddleware->setErrorHandler(HttpNotFoundException::class, function (
+    Request $request,
+    Throwable $exception,
+    bool $displayErrorDetails,
+    bool $logErrors,
+    bool $logErrorDetails
+) use ($app) {
+    $response = $app->getResponseFactory()->createResponse();
+    $response->getBody()->write('{"error": "Recurso não foi encontrado"}');
+    return $response->withHeader('Content-Type', 'application/json')
+                    ->withStatus(404);
+}
+);
+ 
+ 
+ 
+$app->get('/tarefas', function (Request $request, Response $response, array $args){
+    $tarefas = [
+        ["id" => 1, "titulo" => "Ler a documentação do Slim", "concluido" => false],
+        ["id" => 3, "titulo" => "Ler a documentação do composer", "concluido" => true],
+        ["id" => 4, "titulo" => "Fazer um lanche", "concluido" => true],
+        ["id" => 5, "titulo" => "Limpar o quarto", "concluido" => false],
     ];
-   
-    $usuarios[] = $novoUsuario;
-    echo json_encode($novoUsuario);
-    http_response_code(201);
-}
+    $response->getBody()->write(json_encode($tarefas));
+    return $response->withHeader('Content-Type', 'application/json');
+});
  
-elseif ($method == 'GET') {
-    echo json_encode(array_slice($usuarios, 0, 5));
+$app->post('/tarefas', function(Request $request, Response $response, array $args){
+if (!array_key_exists('titulo', $args) || empty($args['titulo'])){
+    $response->getBody()->write(json_encode([
+        "mensagem" => "título é obrigatorio"
+    ]));
 }
+    return $response->withStatus(201);
+});
  
-elseif ($method == 'DELETE') {
-    parse_str($_SERVER['QUERY_STRING'], $query);
-    if (!isset($query['id'])) {
-        echo json_encode(["erro" => "ID é obrigatório"]);
-        http_response_code(400);
-        exit;
+$app->delete('/tarefas', function(Request $request, Response $response, array $args){
+ 
+    return $response->withStatus(204);
+});
+ 
+$app->put('/tarefas', function(Request $request, Response $response, array $args){
+    $id = $args['id'];
+    $dados_para_atualizar = (array) $request->geParsedBody();
+    if(array_key_exists('titulo', $dados_para_atualizar) && empty($dados_para_atualizar['titulo'])){
+        $response->getBody()->write(json_encode([
+            "mensagem"=> "titulo é obrigatorio"
+        ]));
+        return $response->withHeader('content-Type', 'application/json')->withStatus(400);
     }
-   
-    $id = (int) $query['id'];
-    $usuarios = array_filter($usuarios, fn($user) => $user['id'] !== $id);
-   
-    echo json_encode(["mensagem" => "Usuário excluído com sucesso"]);
-    http_response_code(200);
-}
+    return $response->withStatus(201);
+});
  
-else {
-    echo json_encode(["erro" => "Método não permitido"]);
-    http_response_code(405);
-}
-?>
+$app->run();
+ ?>
