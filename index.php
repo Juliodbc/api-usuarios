@@ -58,7 +58,7 @@ $app->delete('/tarefas', function(Request $request, Response $response, array $a
  
 $app->put('/tarefas', function(Request $request, Response $response, array $args){
     $id = $args['id'];
-    $dados_para_atualizar = (array) $request->geParsedBody();
+    $dados_para_atualizar = (array) $request->getParsedBody();
     if(array_key_exists('titulo', $dados_para_atualizar) && empty($dados_para_atualizar['titulo'])){
         $response->getBody()->write(json_encode([
             "mensagem"=> "titulo é obrigatorio"
