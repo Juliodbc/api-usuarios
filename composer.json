@@ -1,6 +1,15 @@
 {
-    "require": {
-        "slim/psr7": "^1.7",
-        "slim/slim": "^4.14"
-    }
+    "name": "julio.correa/senhas",
+    "autoload": {
+        "psr-4": {
+            "JulioCorrea\\Senhas\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Your Name",
+            "email": "you@example.com"
+        }
+    ],
+    "require": {}
 }
