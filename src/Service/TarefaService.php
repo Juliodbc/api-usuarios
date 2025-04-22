@@ -1,6 +1,6 @@
 <?php
-namespace JulioCorrea\Senhas\Service\TarefasService;
-
+namespace JulioCorrea\Tarefas\Service\TarefasService;
+ 
 class TarefasService
 {
     private $filePath = __DIR__ . '../data.json';
